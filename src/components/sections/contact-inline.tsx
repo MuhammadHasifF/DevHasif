@@ -98,10 +98,14 @@ export function ContactInline() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(data),
+        signal: AbortSignal.timeout(15000),
       });
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? "Something broke on send");
+      }
+      if (!body.ok || body.dev) {
+        throw new Error("This preview has not delivered your message. Please email me directly.");
       }
       setStatus("success");
       reset();

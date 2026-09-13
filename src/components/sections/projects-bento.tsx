@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePointerSpotlight } from "@/components/primitives/use-pointer-spotlight";
 import { DiagonalArrow } from "@/components/primitives/diagonal-arrow";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
 import { projects, projectCategories, type ProjectCategory } from "@/content/projects";
@@ -21,12 +22,12 @@ export function ProjectsBento() {
   return (
     <Section
       id="all-projects"
-      eyebrow="ARCHIVE"
+      eyebrow="PROJECTS"
       index={3}
       total={7}
       stamp="// FULL ARCHIVE"
       title={["Selected Projects."]}
-      intro="Six non-employment projects across applied AI, machine learning, data analytics, and full-stack product development. Each case study separates implementation from measured outcomes."
+      intro="Six projects outside my employed roles—from privacy-first workflows and AI agents to classification and large-scale forecasting. Explore the implementation, evaluation, and trade-offs."
     >
       <div className="mb-8 flex flex-wrap items-center gap-2">
         {projectCategories.map((c) => (
@@ -77,6 +78,7 @@ export function ProjectsBento() {
                         {p.title}
                       </h3>
                       <p className="mt-2 line-clamp-2 text-sm text-[var(--color-text-1)]">{p.tagline}</p>
+                      <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-1)]">{p.preview}</p>
                       <div className="mt-4 flex flex-wrap gap-1.5">
                         {p.stack.slice(0, 4).map((s) => (
                           <span
@@ -110,14 +112,7 @@ function BentoCardLink({
   href: string;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLAnchorElement>(null);
-  const onMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
-  };
+  const { ref, onMove } = usePointerSpotlight();
   return (
     <Link
       ref={ref}

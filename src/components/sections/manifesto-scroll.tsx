@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useAnimationVisibility } from "@/components/primitives/use-animation-visibility";
 
 /**
  * Cinematic scroll bridge between Hero and About.
@@ -15,6 +16,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion
  */
 export function ManifestoScroll() {
   const ref = useRef<HTMLElement>(null);
+  useAnimationVisibility(ref);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,

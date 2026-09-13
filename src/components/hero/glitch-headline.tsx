@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { createAnimationTimers } from "@/lib/animation-timers";
+import { useSettings } from "@/components/layout/settings-provider";
 
 type GlitchPhase = "idle" | "burst" | "swap";
 
@@ -24,6 +26,7 @@ const ZERO_BURST: Burst = { rgb: 0, slice: 0, sliceY: 0, shake: 0, invert: false
  * - Reveal-line entrance is preserved so the section still cinematically settles in.
  */
 export function GlitchHeadline({ className }: { className?: string }) {
+  const { reducedMotion } = useSettings();
   const ref = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
   const [first, setFirst] = useState<"MUHAMMAD" | "DEV">("MUHAMMAD");
@@ -88,15 +91,16 @@ export function GlitchHeadline({ className }: { className?: string }) {
   // tab is hidden so we don't burn CPU running animations no one is seeing.
   useEffect(() => {
     if (!revealed) return;
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    if (reducedMotion) {
+      setBurst(ZERO_BURST);
+      setPhase("idle");
+      return;
+    }
 
     let cancelled = false;
     let visible = !document.hidden;
     let onScreen = true;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const timers = createAnimationTimers();
 
     const onVisibility = () => {
       visible = !document.hidden;
@@ -119,7 +123,7 @@ export function GlitchHeadline({ className }: { className?: string }) {
       if (cancelled) return;
       if (!visible || !onScreen) {
         // Skip this beat, retry shortly when conditions allow.
-        timeouts.push(setTimeout(trigger, 600));
+        timers.schedule(trigger, 600);
         return;
       }
       const heavy = Math.random() < 0.42;
@@ -132,7 +136,7 @@ export function GlitchHeadline({ className }: { className?: string }) {
           setBurst(ZERO_BURST);
           setPhase("idle");
           const wait = 1800 + Math.random() * 2400;
-          timeouts.push(setTimeout(trigger, wait));
+          timers.schedule(trigger, wait);
           return;
         }
         const rgb = (heavy ? 6 : 3) + Math.random() * (heavy ? 6 : 3);
@@ -152,20 +156,20 @@ export function GlitchHeadline({ className }: { className?: string }) {
           setFirst((f) => (f === "MUHAMMAD" ? "DEV" : "MUHAMMAD"));
           setPhase("swap");
         }
-        timeouts.push(setTimeout(() => runBeats(i + 1), 70 + Math.random() * 90));
+        timers.schedule(() => runBeats(i + 1), 70 + Math.random() * 90);
       };
 
       runBeats(0);
     };
 
-    timeouts.push(setTimeout(trigger, 1200));
+    timers.schedule(trigger, 1200);
     return () => {
       cancelled = true;
-      timeouts.forEach(clearTimeout);
+      timers.clear();
       document.removeEventListener("visibilitychange", onVisibility);
       io?.disconnect();
     };
-  }, [revealed]);
+  }, [revealed, reducedMotion]);
 
   const sliceClip =
     phase === "burst" && burst.slice > 0

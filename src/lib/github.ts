@@ -26,7 +26,8 @@ const headers: Record<string, string> = {
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
 };
-if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+if (process.env.GITHUB_TOKEN)
+  headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 
 export async function fetchRepos(limit = 6): Promise<GitHubRepo[]> {
   try {
@@ -34,11 +35,17 @@ export async function fetchRepos(limit = 6): Promise<GitHubRepo[]> {
     // missing recent activity when the caller asks for a small N.
     const res = await fetch(
       `${GH}/users/${siteConfig.github.username}/repos?sort=updated&per_page=30`,
-      { headers, next: { revalidate: 60 * 30 } },
+      {
+        headers,
+        next: { revalidate: 60 * 30 },
+        signal: AbortSignal.timeout(5000),
+      },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as GitHubRepo[];
-    return data.filter((r) => !r.full_name.endsWith(".github.io")).slice(0, limit);
+    return data
+      .filter((r) => !r.full_name.endsWith(".github.io"))
+      .slice(0, limit);
   } catch {
     return [];
   }
@@ -79,7 +86,9 @@ export type GitHubPullRequest = {
  * user's own) private repos when the user is authenticated, but in
  * the absence of a token only surfaces those in public repos.
  */
-export async function fetchPullRequests(limit = 8): Promise<GitHubPullRequest[]> {
+export async function fetchPullRequests(
+  limit = 8,
+): Promise<GitHubPullRequest[]> {
   try {
     const q = encodeURIComponent(`author:${siteConfig.github.username} is:pr`);
     const res = await fetch(

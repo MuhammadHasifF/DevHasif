@@ -69,8 +69,9 @@ export function AboutTeaser() {
                     sector data and automation, and forecasting work at Deloitte.
                     Outside work, I build and test AI products around active
                     recall, care coordination, productivity agents, and model
-                    evaluation. I&rsquo;m seeking 2026 internships where I can
-                    contribute across data, ML, or applied AI engineering.
+                    evaluation. I&rsquo;m seeking data analytics, machine learning,
+                    and AI engineering internships where I can contribute hands-on,
+                    learn from experienced teams, and build on my research and consulting experience.
                   </p>
                 </div>
               </motion.div>
