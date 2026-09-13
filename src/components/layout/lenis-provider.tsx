@@ -13,7 +13,10 @@ import { useSettings } from "./settings-provider";
 
 type ScrollTarget = string | HTMLElement | number;
 type ScrollOptions = { offset?: number; immediate?: boolean; duration?: number };
-type LenisCtx = { scrollTo: (target: ScrollTarget, opts?: ScrollOptions) => void };
+type LenisCtx = {
+  scrollTo: (target: ScrollTarget, opts?: ScrollOptions) => void;
+  subscribeScroll?: (callback: () => void) => () => void;
+};
 
 const Ctx = createContext<LenisCtx | null>(null);
 
@@ -21,6 +24,11 @@ const easeOutExpo = (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
 export function LenisProvider({ children }: { children: ReactNode }) {
   const ref = useRef<Lenis | null>(null);
+  const subscribers = useRef(new Set<() => void>());
+  const subscribeScroll = useCallback((callback: () => void) => {
+    subscribers.current.add(callback);
+    return () => { subscribers.current.delete(callback); };
+  }, []);
   const { reducedMotion } = useSettings();
 
   useEffect(() => {
@@ -37,6 +45,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       touchMultiplier: 1,
     });
     ref.current = lenis;
+    lenis.on("scroll", () => subscribers.current.forEach(callback => callback()));
 
     let raf = 0;
     const tick = (time: number) => {
@@ -82,7 +91,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     }
   }, [reducedMotion]);
 
-  return <Ctx.Provider value={{ scrollTo }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ scrollTo, subscribeScroll }}>{children}</Ctx.Provider>;
 }
 
 export function useLenisScroll(): LenisCtx {

@@ -84,13 +84,16 @@ test("resume and red H favicon assets are present", () => {
   );
 });
 
-test("the original neon palette and animated home composition are preserved", () => {
+test("the global palette and sections after the scoped opening are preserved", () => {
   const css = readFileSync(new URL("../src/styles/globals.css", import.meta.url), "utf8");
   assert.match(css, /--color-accent:\s*#ff1e3c/);
   assert.match(css, /--color-bg-0:\s*#030305/);
   const page = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
-  for (const component of ["Hero", "ManifestoScroll", "Marquee", "StatsStrip", "FeaturedRail", "ProjectsBento", "CrawlingBorder"]) {
+  for (const component of ["OpeningSequence", "Marquee", "StatsStrip", "FeaturedRail", "ProjectsBento", "CrawlingBorder"]) {
     assert.ok(page.includes("<" + component), component + " must remain mounted");
   }
+  const opening = readFileSync(new URL("../src/components/hero/opening-sequence.tsx", import.meta.url), "utf8");
+  assert.match(opening, /<Hero\s/);
+  assert.match(opening, /<ManifestoScroll\s/);
   assert.ok(!css.includes(".glitch-word-ghost { display: none"));
 });
