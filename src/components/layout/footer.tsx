@@ -29,7 +29,7 @@ export function Footer() {
             </span>
           </div>
           <p className="mt-6 max-w-md text-sm text-[var(--color-text-1)]">
-            I&rsquo;m open to 2026 data, machine-learning, and applied-AI
+            I&rsquo;m open to data analytics, machine-learning, and AI engineering
             internships, research collaborations, and thoughtful engineering problems.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">

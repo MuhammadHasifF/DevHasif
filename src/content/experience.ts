@@ -17,7 +17,7 @@ export const experience: Role[] = [
   {
     company: "Singapore Institute of Technology · Future Ship & Systems Design",
     orgKey: "sit",
-    title: "Assistant Research and Full-Stack Developer · Maritime Data & Analytics",
+    title: "Assistant Research and Full-Stack Developer",
     type: "Full-Time",
     start: "03/2026",
     end: null,
@@ -25,12 +25,22 @@ export const experience: Role[] = [
     summary:
       "Developing an end-to-end maritime condition-monitoring and fault-diagnosis platform that turns electric-harbour-craft SCADA, sensor, and alarm data into near-real-time vessel-health monitoring, explainable diagnostics, and engineering decision support.",
     highlights: [
-      "Build the full-stack platform with Python, Django REST Framework, SQL Server, React, and TypeScript, spanning multi-vessel data models, authenticated APIs, configurable FMECA, historical replay, dashboards, and fault-evidence views.",
+      "Own solo full-stack development with Python, Django REST Framework, SQL Server, React, and TypeScript: multi-vessel data models, authenticated APIs, configurable failure-mode diagnostics (FMECA), historical replay, dashboards, and fault-evidence views.",
       "Engineer reliable ingestion and transformation pipelines for high-volume battery and propulsion telemetry, handling sparse signals, duplicates, missing or sentinel values, subsystem mapping, and batched persistence across multi-million-row datasets while improving a local replay benchmark by 87%.",
       "Collaborate with maritime researchers and engineers to translate operational requirements into maintainable data models, APIs, diagnostic workflows, and interfaces with an emphasis on traceability, performance, and usability.",
     ],
     repositoryNote: "Code maintained in private SIT repositories.",
-    tech: ["Python", "Django REST Framework", "SQL Server", "Pandas", "React", "TypeScript", "REST APIs", "Docker", "Pytest"],
+    tech: [
+      "Python",
+      "Django REST Framework",
+      "SQL Server",
+      "Pandas",
+      "React",
+      "TypeScript",
+      "REST APIs",
+      "Docker",
+      "Pytest",
+    ],
   },
   {
     company: "Singapore Institute of Technology · Centre for Immersification",
@@ -47,9 +57,27 @@ export const experience: Role[] = [
       "Built modular engine and asynchronous job workflows across RTAB-Map, COLMAP, Blender, and experimental 3D Gaussian Splatting and Gaussian Grouping pipelines, including status, retry, recovery, coordinate alignment, APIs, tests, and documentation.",
       "Produced prototype engineering and technical documentation used by the research team in submissions to ACM CHI and DIS.",
     ],
-    links: [{ label: "R3CAP public repository", href: "https://github.com/singaporetech/r3cap" }],
-    repositoryNote: "Additional contributions were maintained in a private SIT repository.",
-    tech: ["Python", "FastAPI", "React", "TypeScript", "Babylon.js", "WebXR", "MongoDB", "RTAB-Map", "COLMAP", "Blender", "Pytest"],
+    links: [
+      {
+        label: "R3CAP public repository",
+        href: "https://github.com/singaporetech/r3cap",
+      },
+    ],
+    repositoryNote:
+      "Additional contributions were maintained in a private SIT repository.",
+    tech: [
+      "Python",
+      "FastAPI",
+      "React",
+      "TypeScript",
+      "Babylon.js",
+      "WebXR",
+      "MongoDB",
+      "RTAB-Map",
+      "COLMAP",
+      "Blender",
+      "Pytest",
+    ],
   },
   {
     company: "Singapore Police Force · Contingency Planning Division",
@@ -65,7 +93,15 @@ export const experience: Role[] = [
       "Developed Python, UiPath RPA, Excel/VBA, ArcGIS, and dashboard workflows for data collection, validation, personnel accountability, logistics, geospatial planning, and command reporting, saving an estimated 30+ analyst hours per operational cycle.",
       "Translated operational requirements into reliable digital workflows and coordinated stakeholders in high-accountability environments where accuracy, readiness, and timely escalation were critical.",
     ],
-    tech: ["Python", "UiPath", "Excel VBA", "ArcGIS", "GIS", "Data Validation", "Dashboards"],
+    tech: [
+      "Python",
+      "UiPath",
+      "Excel VBA",
+      "ArcGIS",
+      "GIS",
+      "Data Validation",
+      "Dashboards",
+    ],
   },
   {
     company: "HTX · Home Team Security Operations Centre",
@@ -82,7 +118,14 @@ export const experience: Role[] = [
       "Prepared technical documentation and delivered cybersecurity demonstrations during the HTX TechX Summit and ministerial visits, translating complex workflows for non-technical stakeholders.",
       "Collaborated in a high-trust environment requiring sound judgement, precise documentation, and disciplined escalation.",
     ],
-    tech: ["SIEM", "Threat Hunting", "Incident Response", "Digital Forensics", "Python", "Pandas"],
+    tech: [
+      "SIEM",
+      "Threat Hunting",
+      "Incident Response",
+      "Digital Forensics",
+      "Python",
+      "Pandas",
+    ],
   },
   {
     company: "Ministry of Manpower",
@@ -97,7 +140,13 @@ export const experience: Role[] = [
     highlights: [
       "Collected, validated, reconciled, and synthesised quantitative and qualitative information, resolving inconsistent submissions into analysis-ready records for workforce research.",
     ],
-    tech: ["Data Collection", "Data Validation", "Data Quality", "Interviewing", "Stakeholder Engagement"],
+    tech: [
+      "Data Collection",
+      "Data Validation",
+      "Data Quality",
+      "Interviewing",
+      "Stakeholder Engagement",
+    ],
   },
   {
     company: "Deloitte Consulting",
@@ -113,7 +162,15 @@ export const experience: Role[] = [
       "Built Python, pandas, and SQL workflows; engineered time-series features; and evaluated ARIMA, XGBoost, and LightGBM approaches using clearly defined validation metrics.",
       "Translated analytical findings into visualisations, recommendations, technical documentation, and presentations for project stakeholders.",
     ],
-    tech: ["Python", "SQL", "Pandas", "Time-Series Forecasting", "ARIMA", "XGBoost", "LightGBM"],
+    tech: [
+      "Python",
+      "SQL",
+      "Pandas",
+      "Time-Series Forecasting",
+      "ARIMA",
+      "XGBoost",
+      "LightGBM",
+    ],
   },
   {
     company: "Hitachi Asia",

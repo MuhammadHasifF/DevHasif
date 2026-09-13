@@ -209,7 +209,7 @@ function FeaturedCardMotion({
       `color-mix(in oklab, var(--color-accent) ${Math.round(15 + p * 55)}%, var(--color-border))`,
   );
   const railOpacity = useTransform(peak, (p) => 0.25 + p * 0.75);
-  const railHeight = useTransform(peak, (p) => `${20 + p * 80}%`);
+  const railScale = useTransform(peak, (p) => 0.2 + p * 0.8);
   const haloOpacity = useTransform(peak, (p) => p * 0.45);
 
   const num = String(index + 1).padStart(2, "0");
@@ -224,9 +224,9 @@ function FeaturedCardMotion({
         {/* Left vertical accent rail that lights up as the card centers */}
         <motion.div
           aria-hidden="true"
-          className="absolute left-0 top-1/2 w-[2px] -translate-y-1/2"
+          className="absolute left-0 top-0 h-full w-[2px] origin-center"
           style={{
-            height: railHeight,
+            scaleY: railScale,
             background:
               "linear-gradient(to bottom, transparent, var(--color-accent), transparent)",
             boxShadow:

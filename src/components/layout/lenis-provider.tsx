@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import Lenis from "lenis";
+import { useSettings } from "./settings-provider";
 
 type ScrollTarget = string | HTMLElement | number;
 type ScrollOptions = { offset?: number; immediate?: boolean; duration?: number };
@@ -20,12 +21,12 @@ const easeOutExpo = (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
 export function LenisProvider({ children }: { children: ReactNode }) {
   const ref = useRef<Lenis | null>(null);
+  const { reducedMotion } = useSettings();
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     // Skip Lenis on touch + reduced motion — let native scroll behave naturally.
-    if (reduce || touch) return;
+    if (reducedMotion || touch) return;
 
     const lenis = new Lenis({
       duration: 1.0,
@@ -39,17 +40,24 @@ export function LenisProvider({ children }: { children: ReactNode }) {
 
     let raf = 0;
     const tick = (time: number) => {
+      if (document.hidden) return;
       lenis.raf(time);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
+    const onVisibility = () => {
+      cancelAnimationFrame(raf);
+      if (!document.hidden) raf = requestAnimationFrame(tick);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVisibility);
       lenis.destroy();
       ref.current = null;
     };
-  }, []);
+  }, [reducedMotion]);
 
   const scrollTo = useCallback((target: ScrollTarget, opts: ScrollOptions = {}) => {
     const duration = opts.duration ?? 1.6;
@@ -62,17 +70,17 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     // Fallback (touch / reduced motion / SSR-mounted before Lenis ready)
     let el: HTMLElement | null = null;
     if (typeof target === "string") {
-      el = document.querySelector(target);
+      el = target.startsWith("#") ? document.getElementById(target.slice(1)) : document.querySelector(target);
     } else if (target instanceof HTMLElement) {
       el = target;
     }
     if (el) {
       const top = el.getBoundingClientRect().top + window.scrollY + offset;
-      window.scrollTo({ top, behavior: opts.immediate ? "auto" : "smooth" });
+      window.scrollTo({ top, behavior: opts.immediate || reducedMotion ? "instant" : "smooth" });
     } else if (typeof target === "number") {
-      window.scrollTo({ top: target + offset, behavior: opts.immediate ? "auto" : "smooth" });
+      window.scrollTo({ top: target + offset, behavior: opts.immediate || reducedMotion ? "instant" : "smooth" });
     }
-  }, []);
+  }, [reducedMotion]);
 
   return <Ctx.Provider value={{ scrollTo }}>{children}</Ctx.Provider>;
 }

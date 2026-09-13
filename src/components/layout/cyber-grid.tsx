@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useAnimationVisibility } from "@/components/primitives/use-animation-visibility";
 
 export function CyberGrid() {
   const ref = useRef<HTMLDivElement>(null);
+  useAnimationVisibility(ref);
 
   useEffect(() => {
     const el = ref.current;
@@ -17,6 +19,8 @@ export function CyberGrid() {
     // shows up as scroll jank. Quantize to 200 steps (0.005 each), and
     // only write to the DOM when a value actually moves to a new step.
     let pending = false;
+    let frame = 0;
+    let maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     let mx = 0;
     let my = 0;
     let sp = 0;
@@ -47,7 +51,7 @@ export function CyberGrid() {
     const schedule = () => {
       if (pending) return;
       pending = true;
-      requestAnimationFrame(apply);
+      frame = requestAnimationFrame(apply);
     };
     const onMove = (e: PointerEvent) => {
       mx = e.clientX;
@@ -55,10 +59,16 @@ export function CyberGrid() {
       schedule();
     };
     const onScroll = () => {
-      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      sp = Math.min(1, Math.max(0, window.scrollY / max));
+      sp = Math.min(1, Math.max(0, window.scrollY / maxScroll));
       schedule();
     };
+    const measure = () => {
+      maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      onScroll();
+    };
+    const resize = new ResizeObserver(measure);
+    resize.observe(document.body);
+    window.addEventListener("resize", measure, { passive: true });
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -66,6 +76,9 @@ export function CyberGrid() {
       window.addEventListener("pointermove", onMove, { passive: true });
     }
     return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onMove);
     };
@@ -172,10 +185,11 @@ export function CyberGrid() {
 
       {/* Mouse-tracked spotlight — intensifies with scroll */}
       <div
-        className="absolute inset-0 motion-reduce:hidden"
+        className="absolute left-0 top-0 h-[840px] w-[840px] motion-reduce:hidden"
         style={{
           background:
-            "radial-gradient(420px circle at var(--mx) var(--my), color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 70%)",
+            "radial-gradient(420px circle at center, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 70%)",
+          transform: "translate3d(calc(var(--mx) - 420px), calc(var(--my) - 420px), 0)",
           opacity: "calc(0.7 + var(--burn) * 0.6)",
         }}
       />

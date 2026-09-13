@@ -35,9 +35,9 @@ export function OrgLogo({
   return (
     <span
       className={cn(
-        "relative inline-flex items-center justify-center overflow-hidden rounded-md ring-1 ring-[var(--color-border)]",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-[var(--color-border)]",
         sz,
-        className
+        className,
       )}
       role="img"
       aria-label={`${label} logo`}
@@ -85,7 +85,11 @@ export function OrgTag({
   return (
     <span className={cn("inline-flex items-center", sz.gap, className)}>
       <OrgLogo orgKey={orgKey} size={size} />
-      {withName && <span className={cn("text-[var(--color-text-1)]", sz.text)}>{label}</span>}
+      {withName && (
+        <span className={cn("text-[var(--color-text-1)]", sz.text)}>
+          {label}
+        </span>
+      )}
     </span>
   );
 }

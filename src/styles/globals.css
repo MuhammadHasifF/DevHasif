@@ -777,3 +777,22 @@ html[data-fully-bordered="true"] body {
   border: 2px solid var(--color-bg-0);
 }
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--color-accent) 60%, var(--color-bg-3)); }
+
+/* Preserve each animation's phase while its section or browser tab is hidden. */
+[data-animation-paused="true"],
+[data-animation-paused="true"] *,
+[data-animation-paused="true"] *::before,
+[data-animation-paused="true"] *::after {
+  animation-play-state: paused !important;
+}
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-reduced-motion="true"] .reveal-line > span {
+  transform: translateY(0) !important;
+}

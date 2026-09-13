@@ -15,7 +15,7 @@ export function HomeHashWatch() {
       if (typeof window === "undefined") return;
       const hash = window.location.hash;
       if (!hash || hash.length < 2) return;
-      const el = document.querySelector(hash);
+      const el = document.getElementById(hash.slice(1));
       if (!el) return;
       // Two rAFs let images / fonts / Section IO observers settle before scrolling.
       requestAnimationFrame(() => {

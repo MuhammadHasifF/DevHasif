@@ -1,17 +1,19 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSettings } from "./settings-provider";
 import { usePathname } from "next/navigation";
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const reduce = useReducedMotion();
+  const { reducedMotion: reduce } = useSettings();
 
   if (reduce) return <>{children}</>;
 
   return (
+    <>
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
@@ -22,8 +24,9 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       >
         {children}
       </motion.div>
-      <CurtainOverlay key={`curtain-${pathname}`} />
     </AnimatePresence>
+    <CurtainOverlay key={`curtain-${pathname}`} />
+    </>
   );
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createAnimationTimers } from "@/lib/animation-timers";
+import { useSettings } from "@/components/layout/settings-provider";
 
 /**
  * Single-word red glitch swap. Cycles between two strings on a randomized
@@ -29,19 +31,23 @@ export function GlitchSwap({
   reserve?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const { reducedMotion } = useSettings();
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [shift, setShift] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    if (reducedMotion) {
+      setShift(0);
+      setPhase("idle");
+      return;
+    }
 
     let cancelled = false;
     let visible = !document.hidden;
     let onScreen = true;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const timers = createAnimationTimers();
 
     const onVisibility = () => {
       visible = !document.hidden;
@@ -63,7 +69,7 @@ export function GlitchSwap({
     const swap = () => {
       if (cancelled) return;
       if (!visible || !onScreen) {
-        timeouts.push(setTimeout(swap, 800));
+        timers.schedule(swap, 800);
         return;
       }
       const beats = 5;
@@ -73,7 +79,7 @@ export function GlitchSwap({
           setShift(0);
           setPhase("idle");
           const wait = 2200 + Math.random() * 3200;
-          timeouts.push(setTimeout(swap, wait));
+          timers.schedule(swap, wait);
           return;
         }
         // Mid-burst, flip to the next word
@@ -82,21 +88,21 @@ export function GlitchSwap({
         }
         setShift((Math.random() - 0.5) * 12 * intensity);
         setPhase("burst");
-        timeouts.push(setTimeout(() => runBeats(i + 1), 60 + Math.random() * 90));
+        timers.schedule(() => runBeats(i + 1), 60 + Math.random() * 90);
       };
       runBeats(0);
     };
 
     // First swap after a beat of breathing room
-    timeouts.push(setTimeout(swap, 1800));
+    timers.schedule(swap, 1800);
 
     return () => {
       cancelled = true;
-      timeouts.forEach(clearTimeout);
+      timers.clear();
       document.removeEventListener("visibilitychange", onVisibility);
       io?.disconnect();
     };
-  }, [words, intensity]);
+  }, [words, intensity, reducedMotion]);
 
   const text = words[index];
   const burst = phase === "burst";

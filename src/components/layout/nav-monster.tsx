@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSettings } from "./settings-provider";
 
 /**
  * Tiny red "monster" that lives in the navbar. Three modes:
@@ -16,12 +17,12 @@ import { useEffect, useRef, useState } from "react";
 export function NavMonster({ scopeRef }: { scopeRef: React.RefObject<HTMLElement | null> }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [enabled, setEnabled] = useState(false);
+  const { reducedMotion } = useSettings();
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const hover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    setEnabled(hover && !reduce);
-  }, []);
+    setEnabled(hover && !reducedMotion);
+  }, [reducedMotion]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -51,13 +52,16 @@ export function NavMonster({ scopeRef }: { scopeRef: React.RefObject<HTMLElement
     let paused = document.hidden;
     const onVisibility = () => {
       paused = document.hidden;
-      if (!paused) prevTs = performance.now();
+      cancelAnimationFrame(raf);
+      if (!paused) {
+        prevTs = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     const tick = (ts: number) => {
       if (paused) {
-        raf = requestAnimationFrame(tick);
         return;
       }
       const frameInterval = mouseInside ? 1000 / 60 : 1000 / 30;
@@ -188,6 +192,7 @@ export function NavMonster({ scopeRef }: { scopeRef: React.RefObject<HTMLElement
           top: 0,
           width: 0,
           height: 0,
+          transform: "translate3d(var(--mx), var(--my), 0)",
           ["--mx" as string]: "80px",
           ["--my" as string]: "42px",
           ["--dir" as string]: "1",
@@ -209,8 +214,8 @@ export function NavMonster({ scopeRef }: { scopeRef: React.RefObject<HTMLElement
       <div
         className="absolute"
         style={{
-          left: "var(--mx)",
-          top: "var(--my)",
+          left: 0,
+          top: 0,
           transform: "translate(-50%, -10%)",
           width: 56,
           height: 14,
@@ -224,8 +229,8 @@ export function NavMonster({ scopeRef }: { scopeRef: React.RefObject<HTMLElement
       <div
         className="absolute"
         style={{
-          left: "var(--mx)",
-          top: "var(--my)",
+          left: 0,
+          top: 0,
           transform:
             "translate(-50%, -100%) rotate(var(--tilt)) scale(var(--squash, 1), var(--stretch, 1))",
           width: 30,

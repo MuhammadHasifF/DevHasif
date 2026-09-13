@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { usePointerSpotlight } from "@/components/primitives/use-pointer-spotlight";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { projectCategories, projects, type ProjectCategory } from "@/content/projects";
@@ -83,6 +84,7 @@ export function ProjectsGrid() {
                       {p.title}
                     </h3>
                     <p className="mt-2 line-clamp-2 text-sm text-[var(--color-text-1)]">{p.tagline}</p>
+                    <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-1)]">{p.preview}</p>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-2)]">
                     <span>{p.year}</span>
@@ -107,14 +109,7 @@ function SpotlightCardLink({
   hue?: string;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLAnchorElement>(null);
-  const onMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
-  };
+  const { ref, onMove } = usePointerSpotlight();
   return (
     <Link
       ref={ref}
