@@ -40,6 +40,12 @@ Static reduced-motion composition and accessible content were inspected. Hardwar
 
 ## Original artwork
 
+### Follow-up touchups
+
+The inline glyph now matches the title's cap height. A responsive two-column identity composition aligns the original portrait with the two-line name block. Advected cloud density and embedded crimson illumination continue updating while scrolling is idle; architectural texture coordinates remain stationary. Foundation weathering, faceted footings, instanced vertical relief and sparse service seams replace the plain nearest blocks. The artificial horizontal cross-canyon beam is removed. The final viewport blends to the same near-black foundation color used by About, with faint original architectural texture beneath its unchanged content. Reduced-motion mode retains the matching static color transition.
+
+Focused browser checks covered desktop proportions, two stationary cloud frames, foundations, About handoff and mobile layout. The artwork file itself is unchanged.
+
 `public/textures/monolith-world.webp`: 1024×1536, about 111 KB. Generated using the built-in image tool, inspected and WebP encoded. Used as distant scene detail and fallback, never on the initial landing.
 
 Prompt summary: original tall continuous charcoal storm environment; severe graphite monoliths flanking empty atmospheric negative space; tapered crowns, sparse crimson seams/cavities, immense lower foundations and mist. Lonely, monumental, restrained and photographic. No copied central tower, text, logos, HUD, conventional windows, pipes, refinery, warehouse, purple neon or watermark.

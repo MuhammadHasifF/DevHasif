@@ -22,7 +22,7 @@ export default function HomePage() {
       <HomeHashWatch />
       <JsonLd />
       <OpeningSequence />
-      <div>
+      <div className="opening-underground">
         <AboutTeaser />
         <StatsStrip />
       </div>

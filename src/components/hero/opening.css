@@ -67,13 +67,18 @@
 .opening-identity {
   position: relative;
   flex: none;
+  --identity-size: clamp(44px, min(11.3vw, 23svh), 225px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4vw;
 }
 .opening-title {
   position: relative;
   margin: 0;
   padding: 0;
   font-family: var(--font-display), sans-serif;
-  font-size: clamp(64px, min(16vw, 27svh), 300px);
+  font-size: var(--identity-size);
   font-weight: 700;
   letter-spacing: -0.065em;
   line-height: 0.86;
@@ -116,8 +121,8 @@
   display: inline-block;
   position: relative;
   flex: none;
-  width: 0.9em;
-  height: 0.5em;
+  width: 1.548em;
+  height: 0.86em;
   margin-left: 0.02em;
   color: #f01c42;
   align-self: flex-end;
@@ -146,10 +151,8 @@
   --glitch-distance: 18px;
 }
 .opening-portrait-depth {
-  position: absolute;
-  right: 1%;
-  bottom: 0.02em;
-  width: clamp(140px, 16vw, 270px);
+  position: relative;
+  width: calc(var(--identity-size) * 1.805);
   aspect-ratio: 1;
   opacity: var(--opening-portrait);
   transform: translate3d(0, calc((1 - var(--opening-portrait)) * 24px), 0)
@@ -320,7 +323,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: #030305;
+  background: linear-gradient(180deg, transparent 5%, #09080b 100%);
   opacity: var(--city-end);
 }
 .opening-aperture {
@@ -358,6 +361,24 @@
 .opening-manifesto-dot {
   color: #e54354;
 }
+.opening-underground {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 12% 50%, #36101b36, transparent 48%),
+    radial-gradient(ellipse at 88% 75%, #37131d26, transparent 40%),
+    linear-gradient(#09080b, #100b10 55%, #09080b);
+}
+.opening-underground:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/textures/monolith-world.webp") center bottom / cover;
+  opacity: 0.075;
+  mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent);
+}
 .opening-sequence[data-enhanced="true"] {
   height: 720svh;
 }
@@ -392,6 +413,9 @@
 }
 .opening-sequence[data-enhanced="false"] .opening-atmosphere > div {
   animation: none;
+}
+.opening-sequence[data-enhanced="false"] {
+  --city-end: 1;
 }
 @keyframes opening-light {
   to {
@@ -531,7 +555,7 @@
     padding-top: 96px;
   }
   .opening-title {
-    font-size: min(16vw, 26svh);
+    font-size: var(--identity-size);
   }
   .opening-description p {
     font-size: 14px;
@@ -541,9 +565,6 @@
   }
   .opening-meta {
     gap: 14px 20px;
-  }
-  .opening-portrait-depth {
-    width: clamp(140px, 14vw, 220px);
   }
 }
 @media (max-width: 699px) {
@@ -568,7 +589,7 @@
     margin-top: 13px;
   }
   .opening-title {
-    font-size: 16.1vw;
+    font-size: var(--identity-size);
     letter-spacing: -0.067em;
     line-height: 0.92;
   }
@@ -577,14 +598,16 @@
     gap: 0.07em;
   }
   .opening-portal-anchor {
-    width: 0.86em;
-    height: 0.477778em;
+    width: 1.548em;
+    height: 0.86em;
     margin-bottom: 0.02em;
   }
   .opening-portrait-depth {
-    right: 0;
-    bottom: 0;
-    width: 18vw;
+    width: calc(var(--identity-size) * 1.96);
+  }
+  .opening-identity {
+    --identity-size: 11.1vw;
+    gap: 3vw;
   }
   .opening-details {
     display: block;

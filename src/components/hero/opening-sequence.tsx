@@ -77,7 +77,7 @@ export function OpeningSequence() {
       root.style.setProperty("--world-position", `${pose.descent * 100}%`);
       root.style.setProperty(
         "--city-end",
-        String(smooth(0.94, 1, value) * 0.3),
+        String(smooth(0.82, 1, value)),
       );
       root.dataset.progress = value.toFixed(4);
       root.style.setProperty("--opening-city", String(pose.cityOpacity));

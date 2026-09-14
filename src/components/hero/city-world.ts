@@ -119,6 +119,15 @@ export function createCityWorld(
       vec3 sky=mix(vec3(.024,.026,.03),vec3(.16,.165,.175),smoothstep(.25,.78,cloud));
       sky+=vec3(.07,.003,.012)*pow(max(0.0,1.0-length(vUv-vec2(.58,.2))),5.0);
       city=mix(city,sky,veil);
+      // Advected clouds and embedded light evolve at idle; architecture stays fixed.
+      vec2 flow=vUv*vec2(4.8*uAspect,3.4)+vec2(uTime*.018,uTime*-.006);
+      float billow=fbm(flow+vec2(fbm(flow*.6),fbm(flow*.6+4.7))*.8);
+      float skyMask=smoothstep(.035,.18,dot(city,vec3(.2126,.7152,.0722)));
+      float air=(1.0-smoothstep(.65,1.0,uTravel)*.8)*skyMask;
+      city=mix(city,city*(.66+billow*.75),air*.7);
+      float ember=pow(smoothstep(.42,.7,fbm(flow*.65+vec2(8.3,2.1))),2.0);
+      float breathe=.7+.3*sin(uTime*.28+billow*3.0);
+      city+=vec3(.5,.01,.025)*ember*breathe*air;
       float lower=smoothstep(.73,1.0,uTravel);
       city*=1.0-lower*.42;
       gl_FragColor=vec4(city,1.0);
@@ -156,18 +165,22 @@ export function createCityWorld(
       "#include <color_fragment>",
       `
       #include <color_fragment>
-      float erosion=noise(vStone.xy*vec2(.13,.004));
-      float joint=step(.992,fract(vStone.x*.032));
-      diffuseColor.rgb*=.74+erosion*.3-joint*.08;`,
+      float erosion=fbm(vStone.xy*vec2(.09,.012)+vStone.z*.003);
+      float channels=1.0-smoothstep(.018,.055,abs(fract(vStone.x*.043)-.5));
+      float scars=smoothstep(.64,.78,fbm(vStone.xy*vec2(.24,.035)));
+      float rain=noise(vec2(vStone.x*.7,vStone.y*.004));
+      diffuseColor.rgb*=.62+erosion*.65+rain*.12-channels*.22-scars*.15;`,
     );
   };
   const dark = material(
     new THREE.MeshStandardMaterial({
-      color: 0x111217,
+      color: 0x1c1d22,
       roughness: 0.79,
       metalness: 0.24,
     }),
   );
+  // Foundation surfaces use the same weathering as the upper monoliths.
+  dark.onBeforeCompile = graphite.onBeforeCompile;
   const crimson = material(
     new THREE.MeshBasicMaterial({ color: 0x981225, toneMapped: false }),
   );
@@ -246,7 +259,11 @@ export function createCityWorld(
   for (const t of towers.slice(0, 4)) {
     // Foundations extend below the camera path, rather than ending as floating
     // blocks against the distant matte at the final low viewpoint.
-    block(t.x, -500, t.z, t.w * 1.7, 1440, t.d * 1.35, dark);
+    const footing = new THREE.Mesh(prism, dark);
+    footing.position.set(t.x, -1220, t.z);
+    footing.scale.set(t.w * 1.7, 1520, t.d * 1.35);
+    footing.rotation.y = t.turn;
+    scene.add(footing);
     block(
       t.x + t.w * 0.17,
       t.h * 0.43,
@@ -266,8 +283,27 @@ export function createCityWorld(
       dark,
     );
   }
-  block(0, 255, -2050, 1220, 11, 30, dark);
-  block(0, 259, -2033, 1120, 0.6, 0.6, crimson);
+  // Vertical relief, not a horizontal cross-canyon beam beneath the manifesto.
+  const ribs = new THREE.InstancedMesh(prism, graphite, 20);
+  const lowerSignals = new THREE.InstancedMesh(box, crimson, 8);
+  towers.slice(0,4).forEach((t,i) => {
+    for (let j=0;j<5;j++) {
+      dummy.position.set(t.x+(j-2)*t.w*.23,-1180,t.z+t.d*(.66+(j%2)*.05));
+      dummy.scale.set(t.w*(j%2 ? .065 : .105),1430+(j%3)*55,12+(j%2)*8);
+      dummy.rotation.set(0,t.turn,0);
+      dummy.updateMatrix();
+      ribs.setMatrixAt(i*5+j,dummy.matrix);
+    }
+    for (let j=0;j<2;j++) {
+      dummy.position.set(t.x+(j ? -.32 : .22)*t.w,160-j*150,t.z+t.d*.8);
+      dummy.scale.set(.85,95+j*30,.7);
+      dummy.updateMatrix();
+      lowerSignals.setMatrixAt(i*2+j,dummy.matrix);
+    }
+  });
+  ribs.computeBoundingSphere();
+  lowerSignals.computeBoundingSphere();
+  scene.add(ribs,lowerSignals);
   // Tiny remote signals establish scale without turning the scene into a grid.
   const traces = new THREE.InstancedMesh(box, crimson, mobile ? 16 : 30);
   let seed = 9031;
@@ -289,10 +325,14 @@ export function createCityWorld(
       uniforms: { uTime: clock, uTravel: travel },
       vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
       fragmentShader: `varying vec2 vUv;uniform float uTime,uTravel;${noise}
-    void main(){float n=fbm(vUv*vec2(5.,3.)+vec2(uTime*.004,0.0));
+    void main(){
+    vec2 flow=vUv*vec2(5.,3.)+vec2(uTime*.018,-uTime*.006);
+    float n=fbm(flow+vec2(fbm(flow*.7),fbm(flow*.7+3.1))*.65);
     float edge=(1.-smoothstep(.3,.5,abs(vUv.x-.5)))*(1.-smoothstep(.2,.5,abs(vUv.y-.5)));
-    float alpha=smoothstep(.28,.8,n)*edge*.36;
+    float alpha=smoothstep(.28,.8,n)*edge*.42;
     vec3 col=mix(vec3(.075,.073,.083),vec3(.19,.19,.2),n);
+    float glow=pow(smoothstep(.42,.7,fbm(flow*.65+vec2(8.3,2.1))),2.0);
+    col+=vec3(.65,.012,.03)*glow*(.7+.3*sin(uTime*.28+n*3.));
     gl_FragColor=vec4(col,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
