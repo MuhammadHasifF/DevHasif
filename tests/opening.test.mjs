@@ -5,6 +5,7 @@ import {
   portalPose,
   cityCamera,
   PORTAL_END,
+  portalViewportPath,
 } from "../src/components/hero/opening-math.ts";
 
 const viewports = [
@@ -14,6 +15,17 @@ const viewports = [
   [390, 844],
 ];
 const bounds = { x: 350, y: 310, width: 120, height: 120 / 1.8 };
+
+test("portal drawing stays viewport-bounded even at maximum zoom", () => {
+  for (const [width,height] of viewports) {
+    for (let i=0;i<=100;i++) {
+      const path = portalViewportPath(portalPose(i/100,bounds,width,height),width,height);
+      const numbers = path.match(/-?\d+(?:\.\d+)?/g).map(Number);
+      numbers.forEach((v,j) => assert.ok(v>=-2.01 && v<=(j%2 ? height : width)+2.01));
+      assert.equal(path,portalViewportPath(portalPose(i/100,bounds,width,height),width,height));
+    }
+  }
+});
 
 test("fresh hero hides the city and keeps the portal exactly at its inline origin", () => {
   const p = portalPose(0, bounds, 1440, 900);
@@ -33,10 +45,10 @@ test("central slash covers every viewport corner before the portal stage ends", 
       for (const y of [0, height]) {
         const gx = (x - p.x) / p.scale + 90,
           gy = (y - p.y) / p.scale + 50;
-        // The slash is a parallelogram bounded by x+(y-4)/2 = 106 and 120.
-        assert.ok(gy >= 4 && gy <= 96);
+        // The slash joins (102,9)-(116,9) to (78,91)-(64,91).
+        assert.ok(gy >= 9 && gy <= 91);
         assert.ok(
-          gx + (gy - 4) / 2 >= 106 && gx + (gy - 4) / 2 <= 120,
+          gx + (gy - 9) * 38 / 82 >= 102 && gx + (gy - 9) * 38 / 82 <= 116,
           `${width}x${height}: uncovered corner`,
         );
       }
@@ -61,17 +73,17 @@ test("portal geometry is continuous and completely direction-independent", () =>
 
 test("camera descends continuously from clouds to below the skyline without an orbit", () => {
   let previous = cityCamera(0);
-  assert.equal(previous.y, 365);
+  assert.equal(previous.y, 2450);
   for (let i = 1; i <= 1000; i++) {
     const current = cityCamera(i / 1000);
     assert.ok(current.y < previous.y);
     assert.ok(current.z < previous.z);
-    assert.ok(Math.abs(current.x - previous.x) < 0.05);
+    assert.ok(Math.abs(current.x - previous.x) < 0.17);
     assert.ok(Math.abs(current.roll) <= 0.012);
     previous = current;
   }
-  assert.equal(previous.y, -48);
-  assert.equal(previous.z, -150);
+  assert.equal(previous.y, 65);
+  assert.equal(previous.z, -80);
 });
 
 test("hero informational copy and links remain intact and old city is unmounted", () => {

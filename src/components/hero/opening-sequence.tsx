@@ -8,7 +8,7 @@ import { useLenisScroll } from "@/components/layout/lenis-provider";
 import { ManifestoScroll } from "@/components/sections/manifesto-scroll";
 import { Hero } from "./hero";
 import { PortalAperture } from "./portal-glyph";
-import { portalPose, smooth, type PortalBounds } from "./opening-math";
+import { portalPose, portalViewportPath, smooth, type PortalBounds } from "./opening-math";
 import type { CityWorld } from "./city-world";
 import "./opening.css";
 
@@ -18,8 +18,7 @@ export function OpeningSequence() {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLSpanElement>(null);
-  const maskRef = useRef<SVGGElement>(null);
-  const edgeRef = useRef<SVGGElement>(null);
+  const edgeRef = useRef<SVGPathElement>(null);
   const momentRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frozen = useRef(false);
@@ -52,13 +51,35 @@ export function OpeningSequence() {
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     root.dataset.enhanced = motion ? "true" : "false";
     const paint = (value: number) => {
+      // ScrollTrigger can report a fractional epsilon at its pinned start.
+      // Snap it to the actual resting pose instead of compositing near-zero SVGs.
+      if (value < 0.00002) value = 0;
       progress = value;
       const pose = portalPose(value, bounds, width, height);
+      const aperturePath = portalViewportPath(pose, width, height);
+      // Once the slash covers all corners, retire clipping without changing pixels.
+      root.style.setProperty(
+        "--portal-clip",
+        pose.portal >= 0.99 ? "none" : `path("${aperturePath}")`,
+      );
       descent = pose.descent;
-      const transform = `translate(${pose.x} ${pose.y}) scale(${pose.scale}) translate(-90 -50)`;
-      maskRef.current?.setAttribute("transform", transform);
-      edgeRef.current?.setAttribute("transform", transform);
+      edgeRef.current?.setAttribute("d", aperturePath);
       edgeRef.current?.setAttribute("opacity", String(pose.edgeOpacity));
+      root.style.setProperty("--portal-material", String(pose.materialOpacity));
+      root.style.setProperty(
+        "--portal-inline",
+        String(1 - smooth(0, 0.04, pose.portal)),
+      );
+      root.style.setProperty(
+        "--opening-portrait",
+        String(pose.portraitOpacity),
+      );
+      root.style.setProperty("--world-position", `${pose.descent * 100}%`);
+      root.style.setProperty(
+        "--city-end",
+        String(smooth(0.94, 1, value) * 0.3),
+      );
+      root.dataset.progress = value.toFixed(4);
       root.style.setProperty("--opening-city", String(pose.cityOpacity));
       root.style.setProperty("--opening-name", String(pose.heroOpacity));
       root.style.setProperty(
@@ -70,14 +91,14 @@ export function OpeningSequence() {
         String(1 - smooth(0.05, 0.48, pose.portal)),
       );
       const opacity =
-        smooth(0.52, 0.61, value) * (1 - smooth(0.79, 0.89, value));
+        smooth(0.53, 0.59, value) * (1 - smooth(0.78, 0.86, value));
       moment.style.opacity = String(opacity);
-      moment.style.transform = `translate3d(${(1 - smooth(0.52, 0.64, value)) * 4 - smooth(0.8, 0.91, value) * 2}vw,${-smooth(0.8, 0.93, value) * 3}vh,0) scale(${1 - smooth(0.8, 0.94, value) * 0.05})`;
+      moment.style.transform = `translate3d(0,${(1 - smooth(0.53, 0.59, value)) * 28 - smooth(0.78, 0.86, value) * 18}px,0)`;
       hero.inert = pose.secondaryOpacity < 0.05;
-      if (value < 0.00001 && (trigger?.progress ?? 0) < 0.00001) {
+      if (value < 0.00002 && (trigger?.progress ?? 0) < 0.00002) {
         frozen.current = false;
         root.dataset.frozen = "false";
-        if (world && !contextLost) {
+        if (world?.ready && !contextLost) {
           worldVisible = true;
           canvas.style.opacity = "1";
         }
@@ -105,10 +126,10 @@ export function OpeningSequence() {
         end: () => `+=${root.offsetHeight - stage.offsetHeight}`,
         pin: stage,
         pinSpacing: false,
-        pinType: "transform",
+        pinType: "fixed",
         invalidateOnRefresh: true,
         onUpdate(self) {
-          if (self.progress > 0.00001) {
+          if (self.progress > 0.00015) {
             frozen.current = true;
             root.dataset.frozen = "true";
           }
@@ -170,7 +191,7 @@ export function OpeningSequence() {
             measure();
             world.render(descent, 0);
             // Never swap the fallback for a different world halfway through a zoom.
-            worldVisible = progress < 0.0001;
+            worldVisible = world.ready && progress < 0.0001;
             canvas.style.opacity = worldVisible ? "1" : "0";
           } catch {
             world?.dispose();
@@ -182,6 +203,18 @@ export function OpeningSequence() {
           canvas.style.opacity = "0";
         });
     const tick = (seconds: number) => {
+      if (world?.ready && !worldVisible && progress < 0.0001 && !contextLost) {
+        worldVisible = true;
+        try {
+          world.render(descent, seconds);
+          canvas.style.opacity = "1";
+        } catch {
+          worldVisible = false;
+          canvas.style.opacity = "0";
+          world.dispose();
+          world = undefined;
+        }
+      }
       if (
         !world ||
         !worldVisible ||
@@ -241,7 +274,7 @@ export function OpeningSequence() {
           {/* A local, original still—not a reference image or a second WebGL world. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/textures/city-fallback.webp"
+            src="/textures/monolith-world.webp"
             alt=""
             loading="lazy"
             decoding="async"
@@ -249,7 +282,7 @@ export function OpeningSequence() {
           <canvas ref={canvasRef} />
           <div className="opening-city-vignette" />
         </div>
-        <PortalAperture maskRef={maskRef} edgeRef={edgeRef} />
+        <PortalAperture edgeRef={edgeRef} />
         <div className="opening-atmosphere" aria-hidden="true">
           <div />
         </div>

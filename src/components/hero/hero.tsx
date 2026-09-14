@@ -5,6 +5,7 @@ import { siteConfig } from "@/../site.config";
 import { ArrowLink } from "@/components/primitives/arrow-link";
 import { GlitchHeadline } from "./glitch-headline";
 import { PortalAnchor } from "./portal-glyph";
+import { HeroPortrait } from "./hero-portrait";
 
 export function Hero({
   frozen,
@@ -26,9 +27,12 @@ export function Hero({
             <span>OPEN TO DATA, ML &amp; AI INTERNSHIPS</span>
           </div>
         </div>
-        <GlitchHeadline frozen={frozen}>
-          <PortalAnchor ref={portalRef} />
-        </GlitchHeadline>
+        <div className="opening-identity">
+          <GlitchHeadline frozen={frozen}>
+            <PortalAnchor ref={portalRef} />
+          </GlitchHeadline>
+          <HeroPortrait frozen={frozen} />
+        </div>
         <div className="opening-details opening-secondary">
           <div className="opening-description">
             <p>{siteConfig.tagline}</p>

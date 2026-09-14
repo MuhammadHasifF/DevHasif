@@ -22,9 +22,11 @@ export default function HomePage() {
       <HomeHashWatch />
       <JsonLd />
       <OpeningSequence />
+      <div>
+        <AboutTeaser />
+        <StatsStrip />
+      </div>
       <Marquee />
-      <StatsStrip />
-      <AboutTeaser />
       <ExperienceTimeline />
       {/* Work, Featured + All Projects merged under one anchor */}
       <div id="work" className="scroll-mt-20">

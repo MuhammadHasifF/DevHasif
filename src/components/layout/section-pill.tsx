@@ -32,14 +32,19 @@ export function SectionPill() {
       contact: "Contact",
     };
 
+    const active = new Set<Element>();
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (!visible.length) return;
-        const top = visible.sort(
-          (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
-        )[0];
-        const id = (top.target as HTMLElement).id;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) active.add(entry.target);
+          else active.delete(entry.target);
+        });
+        const top = sections.find((section) => active.has(section));
+        if (!top) {
+          setLabel(null);
+          return;
+        }
+        const id = top.id;
         const t = titles[id] ?? id.replace(/-/g, " ");
         setLabel(t);
       },

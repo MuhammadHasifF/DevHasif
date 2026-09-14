@@ -1,62 +1,45 @@
-# Opening sequence — implementation, visual review pending
+# Hero / portal / monolith refinement
 
-Baseline: `02fd9a3` on `improve/portfolio-2026-refresh`.
+Baseline: `64cda52` on main. Worktree: `/Users/hasif/Work/dev-hasif-main`.
 
 ## Scope
 
-Only the opening hero and former manifesto sequence were replaced. Hero informational copy, CTA destinations, the site configuration and resume are unchanged. The old decorative SVG city/HUD treatment is no longer mounted. The exact manifesto phrase remains. The only identity-text change is the `</>` suffix.
+Restored the dominant two-line title, original bamboo-forest portrait and coordinated sliced glitch bursts. Both identities end with a crimson `</>`. Hero informational copy, CTA destinations, metadata, resume, biography, employment, projects and later-section designs are unchanged.
 
-The homepage from `<Marquee />` onward is byte-identical to the baseline. A read-only comparison also verified 78 existing source/config/resume files outside the allowed edits were unchanged. Navigation, global typography/palette, other routes and later sections were not redesigned. Lenis gained only a scroll subscription bridge; its existing configuration and animation loop remain.
+Homepage order: opening → About with retained statistics footer → organization marquee → Experience → existing remaining content. Marquee occurs once. A small SectionPill observer correction clears stale labels when reversing into the opening; its appearance is unchanged.
 
 ## Implementation
 
-- `opening-sequence.tsx`: a normal-document-scroll GSAP pin, no wheel handlers. Root height is 660svh desktop / 580svh mobile; the viewport remains 100svh. The first 36% gives approximately 202vh / 173vh of portal travel. A single delayed refresh accounts for the existing route-enter transform.
-- `opening-math.ts`: direction-independent portal geometry and camera poses. The glyph's central slash eventually covers every viewport corner; there is no masked-world/full-world swap.
-- `portal-glyph.tsx`: matching inline vector anchor and inverse luminance aperture over one persistent canvas. At zero progress the city opacity is exactly zero.
-- `glitch-headline.tsx`: short red/white sliced events with long stable intervals. Scroll freezes the current word; return to essentially zero releases it. Timer cleanup and offscreen/hidden-page checks remain.
-- `city-world.ts`: one dynamically imported Three renderer; deterministic instanced architecture, procedural emissive windows, cloud shaders, sparse traffic, structural supports, pipes, service lighting and a drainage floor. Camera descends from Y=365 to Y=-48 with small lateral drift. Desktop DPR capped at 1.35, mobile at 1; mobile has fewer buildings and lights. Environmental frames stop offscreen/hidden and are limited to 30fps when stationary. No postprocessing dependency was introduced.
-- `manifesto-scroll.tsx`: measured desktop single-line type, deliberate mobile two-line type. The text remains in the accessibility tree even outside its visible scroll interval.
-- `opening.css`: scoped styles, opaque non-city landing and static progressive-enhancement layout. Reduced motion has two natural viewports, no pin or camera travel, and does not load Three. No-WebGL/shader failure/context loss retains the local still through the same aperture.
+- One normal-scroll GSAP viewport pin, using the existing Lenis subscription; no wheel interception. Root 720svh desktop / 620svh mobile; stage exactly 100svh. Portal occupies 34% of the pinned runway, approximately 211vh / 177vh.
+- First meaningful scroll freezes the currently visible name through a ref. Timers are not reconstructed on scroll. Returning to effectively zero resumes the cycle; fractional start-position errors snap to zero.
+- Solid crimson glyph becomes translucent and then a clear aperture. Name, portrait and secondary copy recede behind it. One persistent city is clipped by a viewport-space CSS path. Polygon clipping bounds the submitted coordinates, avoiding enormous offscreen SVG surfaces. A matching SVG provides crimson material/rim, not a second world.
+- The central slash covers every viewport corner before clipping is retired. Pose math is direction-independent; no environment is swapped at the boundary.
+- Explicitly hybrid city: original generated distant monolith artwork, instanced faceted foreground megastructures, procedural surface variation, GPU fog, sparse crimson seams and tiny remote signals. This is not an entirely procedural environment. No supplied tower image or reference-site asset is embedded.
+- Camera descends Y=2450 → 65, with 240 units of forward travel and restrained lateral drift/roll. Foundations extend beneath the final camera position. Mounted scene has no factory, pipes, refinery or office-window grid.
+- Manifesto uses approximately 86% of desktop width, two deliberate mobile lines, a centred hold and slight vertical entry/exit. Exact wording retained.
+- One lazy renderer; DPR capped at 1; shared geometry/materials and instancing. Mobile narrows architecture spacing and reduces signals. Rendering stops when hidden/offscreen, and stationary environmental updates cap at 30fps. No postprocessing dependency.
+- Reduced motion: natural-flow hero + static city, no pin/zoom/travel and no Three import. WebGL creation/shader failure or context loss hides the canvas and retains local artwork. Late loading does not replace the fallback halfway through a traversal.
 
-If WebGL arrives after scrolling has already begun, that traversal stays on the fallback instead of visibly switching environments during the zoom. A return to the landing enables the initialized world for the next traversal.
+## Three visual refinement passes
 
-## Verification completed
+Browser: connected Edge, development followed by isolated production preview. Jesko and Oryzo were inspected interactively for pacing and foreground occlusion, without copying assets or source.
 
-- TypeScript: passed.
-- ESLint: passed.
-- Unit/content tests: 16 passed, including all four requested viewport sizes for aperture coverage, exact inline origin, reverse-path symmetry and monotonic camera descent.
-- Production build: passed, all 17 static pages generated. Existing edge-runtime static-generation warning remains. Home first-load JS reported 263 KB; this is not a runtime performance measurement.
-- Content/scope comparison: passed as described above.
-- Local production route smoke checks: passed for home, work, resume, writing, six case studies, navigation anchors, assets, unknown-project 404 and invalid-contact rejection. Preview: `http://127.0.0.1:3041`. These are HTTP checks, not browser QA.
+1. Composition, 1440×900: both names, portrait, small/mid/large portal, clouds, manifesto, foundations and About release. Fixed grouped SVG clipping, restored foreground occlusion, removed the horizon-cutting floor and cleared the stale About pill.
+2. Motion/mobile, 390×844: first-scroll freeze, aperture, full city, two-line manifesto, lower city and reverse reset. Fixed CTA wrapping, corrected artwork aspect ratio and adjusted mobile architectural spacing. Confirmed the production canvas was visible rather than accidentally reviewing only fallback.
+3. Atmosphere/regression, 1366×768 and 1920×1080: lowered exposure, extended foundations to remove dangling blocks, bounded portal geometry and changed the viewport pin from transform to fixed after a wide-screen compositor defect. Fresh production verification confirms the full wide-screen hero renders correctly. Reduced-motion settings were toggled through the UI and restored.
 
-## Required visual QA — blocked, 0 of 3 passes completed
+Static reduced-motion composition and accessible content were inspected. Hardware context-loss injection, Safari/Firefox runs and Lighthouse/FPS benchmarking were not performed. Caps and visual inspection are not measured frame-rate guarantees.
 
-The browser skill bootstrap returned `No browser is available`; the prescribed browser list returned `[]`. An asynchronous request to connect a browser was sent. No browser screenshots, runtime FPS claims, Lighthouse scores, cross-browser claims or visual approvals have been made. The references were available as web text, not as interactively inspected animations. `oryzo.ai/Jesko` did not resolve through the browsing tool.
+## Verification
 
-Once connected, inspect Oryzo/Jesko interaction pacing without copying assets or source, then perform all three visual refinement passes on the local production preview. Required viewports: 1440×900, 1920×1080, 1366×768, 390×844.
+- Production build: passed, 17 static pages; home first-load JS approximately 264 KB.
+- ESLint and TypeScript: passed.
+- Unit/content tests: 17 passed, including viewport-bounded geometry, all viewport corners inside the final slash, exact origin, reverse symmetry, continuous descent, timer cleanup and preserved content.
+- Local production smoke: home/work/resume/writing, six case studies, PDF/icon/OG/sitemap/robots, anchors, unknown-project 404, invalid/malformed contact rejection. No valid contact message sent.
+- Existing edge-runtime static-generation and Node module-type warnings remain unrelated.
 
-| Check | Approximate normalized sequence progress |
-| --- | --- |
-| A: initial landing | 0 |
-| B: first scroll/freeze | .003 |
-| C: small city aperture | .04 |
-| D: mid zoom | .16 |
-| E: near-full aperture | .25 |
-| F: fully inside city | .36 |
-| G: cloud descent | .43 |
-| H: skyline | .54 |
-| I: complete manifesto | .66 |
-| J: industrial endpoint / handoff | .98–1, then scroll past pin |
-| K: reverse | reverse every checkpoint, finish at 0 |
+## Original artwork
 
-Pass 1: composition, portal alignment/continuity and black/red levels. Pass 2: city silhouette, atmosphere, camera pacing, manifesto width and mobile composition. Pass 3: reverse stability, resize/orientation, both frozen names, keyboard navigation, deep links/route remounts, reduced motion, WebGL/context-loss fallback and sustained performance. Refine between passes; do not count code review or passing tests as visual passes.
+`public/textures/monolith-world.webp`: 1024×1536, about 111 KB. Generated using the built-in image tool, inspected and WebP encoded. Used as distant scene detail and fallback, never on the initial landing.
 
-## Original fallback asset
-
-Built-in image generation was used only for the non-WebGL/static fallback, never for the realtime scene or initial landing. Original output was inspected and lossily encoded to `public/textures/city-fallback.webp` (1672×941, 109,880 bytes). No reference-site assets or supplied tower images were embedded.
-
-Generation prompt:
-
-> Create one original cinematic environment still for a website's static non-WebGL fallback. Landscape 16:9. Scene: a vast isolated industrial city canyon in nearly black graphite architecture, viewed from above through storm fog, deep crimson emissive infrastructure, dense irregular terraced building masses on both sides, distant red service lights, restrained sparse red traces far below, immense structural bridges and hints of pipes in lower dark levels. The centre is EMPTY atmospheric negative space receding into haze, not a building. NO central tower, no signature skyscraper, no pyramidal landmark. Sophisticated realistic architectural atmosphere, photographic black levels, desaturated charcoal storm clouds, deep burgundy reflected light, a few white-hot crimson sources only. Lonely, hostile but elegant, monumental depth and scale. No logos, text, glyphs, HUD, signs, purple, rainbow, videogame UI, or watermark. Original environment, not any franchise or the supplied reference towers. Intended as graceful static fallback for the same procedural city whose architecture flanks a descending central canyon. Save the result and return its file path.
-
-Reference/documentation pages consulted: [Oryzo](https://oryzo.ai/), [Jesko Jets](https://jeskojets.com/), [GSAP ScrollTrigger](https://gsap.com/docs/v3/Plugins/ScrollTrigger/), [Lenis](https://github.com/darkroomengineering/lenis), [Three.js](https://threejs.org/docs/).
+Prompt summary: original tall continuous charcoal storm environment; severe graphite monoliths flanking empty atmospheric negative space; tapered crowns, sparse crimson seams/cavities, immense lower foundations and mist. Lonely, monumental, restrained and photographic. No copied central tower, text, logos, HUD, conventional windows, pipes, refinery, warehouse, purple neon or watermark.
