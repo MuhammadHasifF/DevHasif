@@ -30,8 +30,9 @@ export function ExperienceTimeline() {
       title={["Different contexts.", "One engineering thread."]}
       intro="Research, data, full-stack engineering, public operations, and cybersecurity—each role strengthened how I turn ambiguous requirements into reliable systems and clear decisions."
     >
-      <div ref={wrapRef} className="relative">
+      <div ref={wrapRef} className="relative" data-experience-track>
         <div
+          data-experience-rail
           aria-hidden="true"
           className="absolute left-[31px] top-0 h-full w-[3px] rounded-full md:left-1/2 md:-translate-x-1/2"
           style={{
@@ -40,18 +41,13 @@ export function ExperienceTimeline() {
           }}
         />
         <motion.div
+          data-experience-energy
           aria-hidden="true"
           style={{ height: lineHeight }}
           className="absolute left-[31px] top-0 w-[3px] origin-top rounded-full md:left-1/2 md:-translate-x-1/2"
         >
           <div
-            className="h-full w-full rounded-full"
-            style={{
-              background:
-                "linear-gradient(to bottom, transparent, var(--color-accent), var(--color-accent-2))",
-              boxShadow:
-                "0 0 14px color-mix(in oklab, var(--color-accent) 70%, transparent), 0 0 28px color-mix(in oklab, var(--color-accent) 40%, transparent)",
-            }}
+            className="experience-signal-material h-full w-full rounded-full"
           />
         </motion.div>
         <ol className="space-y-10 md:space-y-16">
@@ -67,6 +63,7 @@ export function ExperienceTimeline() {
                 <div className="relative z-10 flex h-16 w-16 items-center justify-center md:col-start-2 md:mx-auto">
                   <span className="absolute inset-0 rounded-full bg-[var(--color-bg-0)]" />
                   <motion.span
+                    data-signal-node
                     initial={false}
                     whileInView={{ scale: 1, opacity: 1 }}
                     viewport={{ once: true, margin: "-80px" }}

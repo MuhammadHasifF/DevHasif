@@ -1,4 +1,5 @@
 import { OpeningSequence } from "@/components/hero/opening-sequence";
+import { SignalStory, SignalInteraction } from "@/components/hero/signal-story";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Marquee } from "@/components/sections/marquee";
 import { StatsStrip } from "@/components/sections/stats-strip";
@@ -21,13 +22,16 @@ export default function HomePage() {
       <CrawlingBorder />
       <HomeHashWatch />
       <JsonLd />
-      <OpeningSequence />
-      <div className="opening-underground">
-        <AboutTeaser />
-        <StatsStrip />
-      </div>
-      <Marquee />
-      <ExperienceTimeline />
+      <SignalStory>
+        <OpeningSequence />
+        <div className="opening-underground">
+          <AboutTeaser />
+          <StatsStrip />
+        </div>
+        <SignalInteraction />
+        <Marquee />
+        <ExperienceTimeline />
+      </SignalStory>
       {/* Work, Featured + All Projects merged under one anchor */}
       <div id="work" className="scroll-mt-20">
         <FeaturedRail />

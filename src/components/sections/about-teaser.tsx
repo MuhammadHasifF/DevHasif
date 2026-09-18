@@ -19,6 +19,7 @@ export function AboutTeaser() {
       stamp="// ORIGIN"
       title={["Engineer.", "Researcher.", "Builder."]}
     >
+      <div className="signal-core-dock" aria-hidden="true" />
       <div className="grid items-start gap-12 md:grid-cols-2">
         <Reveal>
           <p className="text-pretty text-lg leading-relaxed text-[var(--color-text-0)]/90">

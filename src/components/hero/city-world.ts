@@ -114,20 +114,28 @@ export function createCityWorld(
       float visibleWidth=min(1.0,uAspect*1.5*visibleHeight);
       vec2 imageUv=vec2(.5+(vUv.x-.5)*visibleWidth,(1.0-uTravel)*(1.0-visibleHeight)+vUv.y*visibleHeight);
       vec3 city=texture2D(uWorld,imageUv).rgb;
-      float cloud=fbm(vUv*vec2(4.8,3.1)+vec2(uTime*.004,0.0));
+      vec2 skyUv=vUv*vec2(4.8*uAspect,3.1);
+      float distant=fbm(skyUv+vec2(uTime*.045,uTime*.009));
+      float middle=fbm(skyUv*1.65+vec2(-uTime*.073,uTime*.025)+distant*.65);
+      float cloud=mix(distant,middle,.42);
       float veil=(1.0-smoothstep(.04,.27,uTravel))*.9;
-      vec3 sky=mix(vec3(.024,.026,.03),vec3(.16,.165,.175),smoothstep(.25,.78,cloud));
-      sky+=vec3(.07,.003,.012)*pow(max(0.0,1.0-length(vUv-vec2(.58,.2))),5.0);
+      vec3 sky=mix(vec3(.009,.011,.016),vec3(.15,.16,.175),smoothstep(.27,.69,cloud));
       city=mix(city,sky,veil);
       // Advected clouds and embedded light evolve at idle; architecture stays fixed.
-      vec2 flow=vUv*vec2(4.8*uAspect,3.4)+vec2(uTime*.018,uTime*-.006);
+      vec2 flow=vUv*vec2(4.8*uAspect,3.4)+vec2(uTime*.07,uTime*-.022);
       float billow=fbm(flow+vec2(fbm(flow*.6),fbm(flow*.6+4.7))*.8);
       float skyMask=smoothstep(.035,.18,dot(city,vec3(.2126,.7152,.0722)));
       float air=(1.0-smoothstep(.65,1.0,uTravel)*.8)*skyMask;
-      city=mix(city,city*(.66+billow*.75),air*.7);
-      float ember=pow(smoothstep(.42,.7,fbm(flow*.65+vec2(8.3,2.1))),2.0);
-      float breathe=.7+.3*sin(uTime*.28+billow*3.0);
-      city+=vec3(.5,.01,.025)*ember*breathe*air;
+      city=mix(city,city*(.38+billow*1.02),air*.85);
+      // Independent, broad moving light sources are occluded by cloud density.
+      // Their 12–20 second evolution is continuous, never a lightning flash.
+      vec2 lightA=vec2(.5+.34*sin(uTime*.19),.55+.19*cos(uTime*.27));
+      vec2 lightB=vec2(.5+.39*cos(uTime*.14+2.1),.38+.22*sin(uTime*.23));
+      vec2 a=(vUv-lightA)*vec2(1.5,2.6),b=(vUv-lightB)*vec2(2.1,2.8);
+      float pools=exp(-dot(a,a)*7.0)*(.55+.45*sin(uTime*.31+1.2))
+        +exp(-dot(b,b)*8.0)*(.55+.45*cos(uTime*.39));
+      float transmission=1.0-smoothstep(.32,.7,billow);
+      city+=vec3(.72,.008,.028)*pools*transmission*air;
       float lower=smoothstep(.73,1.0,uTravel);
       city*=1.0-lower*.42;
       gl_FragColor=vec4(city,1.0);
@@ -326,13 +334,14 @@ export function createCityWorld(
       vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
       fragmentShader: `varying vec2 vUv;uniform float uTime,uTravel;${noise}
     void main(){
-    vec2 flow=vUv*vec2(5.,3.)+vec2(uTime*.018,-uTime*.006);
+    vec2 flow=vUv*vec2(5.,3.)+vec2(-uTime*.085,uTime*.028);
     float n=fbm(flow+vec2(fbm(flow*.7),fbm(flow*.7+3.1))*.65);
     float edge=(1.-smoothstep(.3,.5,abs(vUv.x-.5)))*(1.-smoothstep(.2,.5,abs(vUv.y-.5)));
-    float alpha=smoothstep(.28,.8,n)*edge*.42;
-    vec3 col=mix(vec3(.075,.073,.083),vec3(.19,.19,.2),n);
-    float glow=pow(smoothstep(.42,.7,fbm(flow*.65+vec2(8.3,2.1))),2.0);
-    col+=vec3(.65,.012,.03)*glow*(.7+.3*sin(uTime*.28+n*3.));
+    float alpha=smoothstep(.28,.72,n)*edge*.46;
+    vec3 col=mix(vec3(.018,.021,.028),vec3(.11,.12,.135),n);
+    float glow=exp(-pow((vUv.x-(.5+.33*sin(uTime*.21)))*5.,2.))
+      *(1.-smoothstep(.35,.72,n))*(.5+.5*sin(uTime*.33+vUv.y*3.));
+    col+=vec3(.48,.004,.018)*glow;
     gl_FragColor=vec4(col,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

@@ -1,5 +1,6 @@
 import { forwardRef, type RefObject } from "react";
 import { GLYPH_PATHS } from "./opening-math";
+import { SIGNAL } from "./signal-material";
 
 export function PortalIcon() {
   return (
@@ -37,7 +38,7 @@ export function PortalAperture({
     >
       <path
         ref={edgeRef}
-        fill="#ed183c"
+        fill={SIGNAL.red}
         fillOpacity="var(--portal-material,1)"
         stroke="#ff4058"
         strokeWidth="1"

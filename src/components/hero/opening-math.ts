@@ -70,7 +70,7 @@ export function portalPose(
     secondaryOpacity: 1 - smooth(0.06, 0.3, p),
     edgeOpacity: smooth(0, 0.04, p) * (1 - smooth(0.88, 0.99, p)),
     materialOpacity: 1 - smooth(0.08, 0.66, p),
-    portraitOpacity: 1 - smooth(0.09, 0.38, p),
+    portraitOpacity: 1 - smooth(0.3, 0.57, p),
     descent: smooth(PORTAL_END, 1, progress),
   };
 }
