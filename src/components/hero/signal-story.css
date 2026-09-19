@@ -9,44 +9,97 @@
   height: 100svh;
   z-index: 12;
   pointer-events: none;
-  opacity: 0;
+  visibility: hidden;
 }
 .signal-story[data-renderer="webgl"] .signal-fallback {
-  visibility: hidden;
+  display: none;
 }
 .signal-story:not([data-renderer="webgl"]) canvas.signal-stage {
-  visibility: hidden;
+  display: none;
+}
+.signal-hand-still {
+  position: fixed;
+  z-index: 13;
+  pointer-events: none;
+  opacity: 0;
+  background: url("/textures/cipher-shadow-hand.webp") 0 50%/300% 100%;
+  filter: brightness(0.55);
+  mask-image: linear-gradient(#000 65%, transparent);
+}
+.signal-story[data-renderer="webgl"] .signal-hand-still {
+  display: none;
 }
 .signal-conductor {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+  width: 24px;
+  transform: translateX(-50%);
   pointer-events: none;
-  z-index: 9;
+  z-index: 13;
+  opacity: 0;
+  overflow: hidden;
 }
-.signal-conductor path {
-  filter: drop-shadow(0 0 5px var(--signal-red));
+.signal-conductor i,
+.signal-conductor b,
+.signal-conductor span {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  display: block;
+}
+.signal-conductor i {
+  width: 24px;
+  background: radial-gradient(
+    ellipse at center,
+    var(--signal-red),
+    transparent 68%
+  );
+  opacity: 0.26;
+}
+.signal-conductor b {
+  width: 5px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--signal-red),
+    transparent
+  );
+  opacity: 0.85;
+}
+.signal-conductor span {
+  width: 1.5px;
+  background: repeating-linear-gradient(
+    0deg,
+    var(--signal-red) 0px,
+    var(--signal-hot) 14px,
+    var(--signal-red) 30px,
+    var(--signal-dark) 62px
+  );
+  background-position: 0 var(--signal-flow, 0px);
+  box-shadow: 0 0 6px var(--signal-red);
 }
 .signal-core-dock {
   position: absolute;
-  right: 8%;
-  top: 190px;
-  width: 220px;
+  left: 50%;
+  top: 255px;
+  width: 150px;
   height: 220px;
+  transform: translateX(-50%);
   pointer-events: none;
 }
 .signal-interaction {
   position: relative;
-  height: 235svh;
+  height: 260svh;
   background: #09080b;
 }
 .signal-interaction-space {
   position: sticky;
   top: 0;
   height: 100svh;
-  background: radial-gradient(ellipse at 50% 50%, #260c172e, transparent 52%);
+  background: radial-gradient(
+    ellipse at var(--signal-axis, 50%) 45%,
+    #260c1720,
+    transparent 48%
+  );
 }
 [data-experience-energy] {
   opacity: var(--signal-charge, 1);
@@ -61,17 +114,34 @@
     0 0 9px #ed183c80,
     0 0 20px #ed183c35;
 }
+[data-experience-rail]:before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: var(--signal-impact, 0);
+  background: radial-gradient(
+    circle,
+    var(--signal-hot),
+    var(--signal-red) 15%,
+    transparent 65%
+  );
+}
 [data-experience-energy]:after {
   content: "";
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   transform: translate(-50%, 50%);
   background: var(--signal-hot, #ffb0b9);
-  box-shadow: 0 0 12px var(--signal-red, #ed183c);
+  box-shadow: 0 0 10px var(--signal-red, #ed183c);
 }
 [data-signal-node] {
   transition:
@@ -83,34 +153,46 @@
   box-shadow: 0 0 16px #ed183c32;
 }
 .signal-story[data-motion="reduced"] .signal-interaction {
-  height: 100svh;
+  height: 120svh;
 }
-.signal-story[data-motion="reduced"] .signal-conductor path {
-  filter: none;
+.signal-story[data-motion="reduced"] .signal-conductor i {
+  display: none;
 }
-@media (max-width: 699px) {
+@media (max-width: 767px) {
   .signal-core-dock {
     position: relative;
+    left: 32px;
     top: auto;
-    right: auto;
-    width: 100%;
-    height: 165px;
+    width: 64px;
+    height: 170px;
+    transform: translateX(-50%);
     margin-bottom: 32px;
   }
   .signal-story #about {
     padding-right: 32px;
   }
-  .signal-interaction {
-    height: 200svh;
+  .signal-story #about > .grid {
+    margin-left: 62px;
   }
-  .signal-conductor path {
-    stroke-width: 1.5;
-    filter: drop-shadow(0 0 3px var(--signal-red));
+  .signal-interaction {
+    height: 230svh;
+  }
+  .signal-conductor {
+    width: 18px;
+  }
+  .signal-conductor i {
+    width: 18px;
+  }
+  .signal-conductor b {
+    width: 4px;
+  }
+  .signal-conductor span {
+    width: 1px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .signal-interaction {
-    height: 100svh;
+    height: 120svh;
   }
   [data-signal-node] {
     transition: none;

@@ -7,23 +7,26 @@ import { useSettings } from "@/components/layout/settings-provider";
 import { useLenisScroll } from "@/components/layout/lenis-provider";
 import { clamp, lerp, smooth } from "./opening-math";
 import { SIGNAL } from "./signal-material";
+import { captureProgress, signalSegment } from "./signal-math";
 import type { createSignalWorld, SignalPose } from "./signal-world";
 import "./signal-story.css";
 
-/** One measured document-space story, independent of the city's pinned camera.
- * No wheel handlers, per-frame React state, or content duplication. */
+/** One scroll authority for extraction, capture, fracture and signal. The rail's
+ * measured X is authoritative at every stage, including the mobile layout. */
 export function SignalStory({ children }: { children: ReactNode }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fallbackRef = useRef<SVGSVGElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null),
+    canvasRef = useRef<HTMLCanvasElement>(null);
+  const fallbackRef = useRef<SVGSVGElement>(null),
+    handRef = useRef<HTMLDivElement>(null);
+  const beamRef = useRef<HTMLDivElement>(null);
   const { reducedMotion } = useSettings();
   const { subscribeScroll } = useLenisScroll();
   useEffect(() => {
     const root = rootRef.current!,
       canvas = canvasRef.current!,
       fallback = fallbackRef.current!,
-      path = pathRef.current!;
+      handStill = handRef.current!,
+      beam = beamRef.current!;
     const opening = root.querySelector<HTMLElement>(".opening-sequence")!;
     const about = root.querySelector<HTMLElement>("#about")!;
     const interaction = root.querySelector<HTMLElement>(".signal-interaction")!;
@@ -35,9 +38,17 @@ export function SignalStory({ children }: { children: ReactNode }) {
     const nodes = Array.from(
       root.querySelectorAll<HTMLElement>("[data-signal-node]"),
     );
+    const rig = fallback.querySelector<SVGGElement>("[data-core-rig]")!;
+    const fallbackPlates = Array.from(
+      fallback.querySelectorAll<SVGPathElement>("[data-core-plate]"),
+    );
+    const doors = Array.from(
+      fallback.querySelectorAll<SVGPathElement>("[data-core-door]"),
+    );
     const reduce =
       reducedMotion || matchMedia("(prefers-reduced-motion: reduce)").matches;
     root.dataset.motion = reduce ? "reduced" : "full";
+    root.dataset.renderer = "fallback";
     let world: ReturnType<typeof createSignalWorld> | undefined,
       disposed = false,
       lost = false;
@@ -47,21 +58,17 @@ export function SignalStory({ children }: { children: ReactNode }) {
       openingEnd = 0,
       emergeStart = 0,
       aboutTop = 0,
-      aboutBottom = 0;
-    let dockX = 0,
       dockY = 0,
       sceneTop = 0,
+      sceneBottom = 0,
       sceneEnd = 0,
-      releaseY = 0,
       railX = 0,
       railY = 0,
-      pathLength = 1;
-    let nodeOffsets: number[] = [],
-      railHeight = 1,
+      railHeight = 1;
+    let offsets: number[] = [],
       lastTime = -1,
       lastScroll = -1,
       refreshFrame = 0;
-    let pathSamples: number[] = [];
     const doc = (el: HTMLElement) => {
       const r = el.getBoundingClientRect();
       return {
@@ -81,38 +88,24 @@ export function SignalStory({ children }: { children: ReactNode }) {
         s = doc(interaction),
         r = doc(rail);
       openingEnd = o.y + o.height - h;
-      emergeStart = openingEnd - (reduce ? h * 0.5 : (o.height - h) * 0.14);
+      emergeStart = openingEnd - (reduce ? h * 0.7 : (o.height - h) * 0.3);
       aboutTop = a.y;
-      aboutBottom = a.y + a.height;
-      dockX = d.x + d.width / 2;
       dockY = d.y + d.height / 2;
       sceneTop = s.y;
-      sceneEnd = s.y + s.height - h * (reduce ? 1 : 1.45);
-      releaseY = sceneEnd + h * 0.43 + Math.min(w * 0.32, 250) * 1.7;
+      sceneBottom = s.y + s.height;
+      sceneEnd = s.y + Math.max(h * 0.1, s.height - h);
       railX = r.x + r.width / 2;
       railY = r.y;
       railHeight = r.height;
-      nodeOffsets = nodes.map((n) => doc(n).y + doc(n).height / 2 - railY);
-      const side = w < 700 ? w - 14 : w - 18;
-      const start = releaseY - rootTop,
-        end = railY - rootTop,
-        bend = Math.min(start + h * 0.4, end - 130);
-      path.setAttribute(
-        "d",
-        `M ${w / 2} ${start} C ${w / 2} ${start + 60},${side} ${start + 60},${side} ${bend} L ${side} ${end - 72} Q ${side} ${end - 32},${side - 40} ${end - 32} L ${railX + 40} ${end - 32} Q ${railX} ${end - 32},${railX} ${end}`,
-      );
-      pathLength = path.getTotalLength();
-      pathSamples = Array.from(
-        { length: 129 },
-        (_, i) => path.getPointAtLength((pathLength * i) / 128).y,
-      );
-      path.style.strokeDasharray = String(pathLength);
+      offsets = nodes.map((n) => {
+        const box = doc(n);
+        return box.y + box.height / 2 - railY;
+      });
+      root.style.setProperty("--signal-axis", `${railX}px`);
       fallback.setAttribute("viewBox", `0 0 ${w} ${h}`);
       world?.resize(w, h);
       lastScroll = -1;
     };
-    // Only these layout sources can move the dock or target: resize, fonts,
-    // About expansion, and Experience accordion changes.
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(refreshFrame);
       refreshFrame = requestAnimationFrame(measure);
@@ -138,98 +131,95 @@ export function SignalStory({ children }: { children: ReactNode }) {
     };
     canvas.addEventListener("webglcontextlost", onLost);
     canvas.addEventListener("webglcontextrestored", onRestored);
-    // Idle-load before the foundation enters view. Reduced motion keeps the
-    // original vector stills and staged grip: no extra WebGL context required.
-    const preload = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting || reduce) return;
-        preload.disconnect();
-        void import("./signal-world")
-          .then(({ createSignalWorld }) => {
-            if (disposed) return;
-            try {
-              world = createSignalWorld(canvas);
-              world.resize(w, h);
-              lastScroll = -1;
-            } catch {
-              root.dataset.renderer = "fallback";
-            }
-          })
-          .catch(() => {
+    // Load before the visible foundation seam, not at the moment of extraction.
+    let loading = false;
+    const load = () => {
+      if (loading || reduce) return;
+      loading = true;
+      void import("./signal-world")
+        .then(({ createSignalWorld }) => {
+          if (disposed) return;
+          try {
+            world = createSignalWorld(canvas);
+            world.resize(w, h);
+            lastScroll = -1;
+          } catch {
             root.dataset.renderer = "fallback";
-          });
-      },
-      { rootMargin: "1200px" },
-    );
-    preload.observe(about);
+          }
+        })
+        .catch(() => {
+          root.dataset.renderer = "fallback";
+        });
+    };
     const tick = (seconds: number) => {
       if (document.hidden) return;
       const y = scrollY;
+      if (y > emergeStart - h * 2) load();
+      if (
+        y === lastScroll &&
+        (reduce || y < emergeStart || y > railY + railHeight + h)
+      )
+        return;
       if (seconds - lastTime < 1 / 30 && y === lastScroll) return;
       lastTime = seconds;
       lastScroll = y;
-      const emerge = smooth(emergeStart, openingEnd, y);
+      const mobile = w < 768;
+      const foundation = smooth(emergeStart, openingEnd - h * 0.2, y);
+      const unlock = smooth(0.35, 0.57, foundation);
+      const lift =
+        smooth(0.57, 0.66, foundation) * 0.12 +
+        smooth(0.73, 1, foundation) * 0.88;
       const handoff = smooth(openingEnd, aboutTop + h * 0.12, y);
-      const leave =
-        w < 700
-          ? smooth(aboutTop + h * 0.05, aboutTop + h * 0.38, y)
-          : smooth(aboutTop + h * 0.25, aboutBottom - h * 0.45, y);
-      const approach = smooth(sceneTop - h * 0.65, sceneTop + h * 0.08, y);
-      const scene = reduce
-        ? clamp((y - sceneTop + h * 0.4) / (h * 0.8))
-        : clamp((y - sceneTop) / Math.max(1, sceneEnd - sceneTop));
-      const hand = smooth(0.08, 0.35, scene),
-        grip = smooth(0.34, 0.57, scene),
-        crush = smooth(0.62, 0.76, scene),
-        release = smooth(0.74, 0.96, scene);
-      const heroSize = lerp(9, Math.min(w * 0.2, 235), emerge);
-      const dockSize = w < 700 ? 118 : 170;
-      // Dock in the blank right half of the heading; then retreat to the gutter,
-      // never passing over About paragraphs or the photograph's caption.
-      const gutter = w < 700 ? w - 15 : Math.min(w - 36, (w + 1152) / 2 + 32);
-      let x = lerp(w * 0.5, dockX, handoff),
-        cy = lerp(h * 0.76, h * 0.5, emerge),
-        size = heroSize;
+      const approach = smooth(sceneTop - h * 0.7, sceneTop + h * 0.08, y);
+      const scene = clamp((y - sceneTop) / (sceneEnd - sceneTop));
+      const capture = captureProgress(scene);
+      const hand = reduce ? (scene > 0.22 ? 1 : 0) : capture.hand;
+      const { grip, crush, release } = capture;
+      const heroSize = lerp(12, mobile ? 150 : 250, foundation);
+      let size = lerp(heroSize, mobile ? 126 : 194, handoff);
+      let cy = lerp(h * 1.05, h * 0.68, foundation) - lift * h * 0.2;
       cy = lerp(cy, dockY - y, handoff);
-      size = lerp(size, dockSize, handoff);
-      x = lerp(x, gutter, leave);
-      cy = lerp(cy, h * 0.34, leave);
-      size = lerp(size, w < 700 ? 25 : 65, leave);
-      const interactionY = h * 0.43 - Math.max(0, y - sceneEnd);
-      x = lerp(x, w * 0.5, approach);
+      // The header-sized object settles into the column gap as copy scrolls by.
+      // Its axis stays fixed; mobile reserves the matching left-side gutter.
+      const carry = smooth(aboutTop + h * 0.12, aboutTop + h * 0.42, y);
+      cy = lerp(cy, Math.max(h * 0.26, dockY - y), carry);
+      size = lerp(size, mobile ? 60 : 74, carry);
+      const interactionY = h * 0.4 - Math.max(0, y - sceneEnd);
       cy = lerp(cy, interactionY, approach);
-      size = lerp(size, Math.min(w * 0.32, 250), approach);
-      const visible =
-        smooth(emergeStart, emergeStart + h * 0.24, y) *
-        (1 - smooth(sceneEnd + h * 0.42, sceneEnd + h * 0.9, y));
+      size = lerp(size, mobile ? 145 : 238, approach);
+      const active = y >= emergeStart && y < sceneEnd + h * 1.05;
       const pose: SignalPose = {
-        x,
+        x: railX,
         y: cy,
         size,
-        reveal: visible,
-        turn: lerp(-0.65, 0.35, emerge) - handoff * 0.6 + approach * 0.3,
+        turn: lerp(-0.34, 0.28, lift) * (1 - approach * 0.8),
+        unlock,
+        lift,
         hand,
         grip,
         crush,
         release,
+        mobile,
       };
-      canvas.style.opacity = String(visible);
-      fallback.style.opacity = String(visible);
+      canvas.style.visibility = active ? "visible" : "hidden";
+      fallback.style.visibility = active ? "visible" : "hidden";
       root.dataset.signalStage =
         y < emergeStart
           ? "city"
-          : y < openingEnd
-            ? "emerge"
-            : y < sceneTop
-              ? "about"
-              : release > 0
-                ? "release"
-                : crush > 0
-                  ? "crush"
-                  : grip > 0
-                    ? "grip"
-                    : "approach";
-      if (visible > 0.001) {
+          : foundation < 0.35
+            ? "foundation"
+            : lift < 1
+              ? "extraction"
+              : y < sceneTop
+                ? "about"
+                : release > 0
+                  ? "release"
+                  : crush > 0
+                    ? "crush"
+                    : grip > 0
+                      ? "grip"
+                      : "approach";
+      if (active) {
         if (world && !lost) {
           try {
             world.render(pose, reduce ? 0 : seconds);
@@ -240,69 +230,65 @@ export function SignalStory({ children }: { children: ReactNode }) {
             root.dataset.renderer = "fallback";
           }
         }
-        const g = fallback.querySelector<SVGGElement>("[data-fallback-rig]")!;
-        g.setAttribute(
+        rig.setAttribute(
           "transform",
-          `translate(${x} ${cy}) scale(${size / 210})`,
+          `translate(${railX} ${cy}) scale(${size / 320})`,
         );
-        fallback
-          .querySelector<SVGGElement>("[data-fallback-core]")!
-          .setAttribute(
+        fallbackPlates.forEach((plate, i) => {
+          const sign = i < 2 ? -1 : 1,
+            snap = smooth(0.48, 0.78, crush) * (i === 1 || i === 2 ? 1 : 0);
+          plate.setAttribute(
             "transform",
-            `scale(${1 - crush * 0.3} ${1 - crush * 0.45})`,
+            `translate(${-sign * crush * 9 + sign * snap * 13} ${snap * 19}) rotate(${sign * snap * 7})`,
           );
-        fallback.querySelector<SVGGElement>(
-          "[data-fallback-core]",
-        )!.style.opacity = String(1 - release);
-        fallback.querySelector<SVGGElement>(
-          "[data-fallback-hand]",
-        )!.style.opacity = String(hand);
-        fallback
-          .querySelector<SVGGElement>("[data-fallback-hand]")!
-          .setAttribute("transform", `translate(0 ${(1 - hand) * 200})`);
-        fallback.querySelector<SVGPathElement>(
-          "[data-fallback-open]",
-        )!.style.opacity = String(1 - grip);
-        fallback.querySelector<SVGPathElement>(
-          "[data-fallback-closed]",
-        )!.style.opacity = String(grip);
-        fallback.querySelector<SVGPathElement>(
-          "[data-fallback-leak]",
-        )!.style.opacity = String(release);
-      }
-      // Monotonic path measured in document space. Find where the viewport's
-      // advancing charge intersects it, including the bend into the real rail.
-      const front = y + h * 0.7 - rootTop;
-      let low = 0,
-        high = 128;
-      while (high - low > 1) {
-        const mid = Math.floor((low + high) / 2);
-        if (pathSamples[mid] < front) low = mid;
-        else high = mid;
-      }
-      const fraction = clamp(
-        (front - pathSamples[low]) /
-          Math.max(0.01, pathSamples[high] - pathSamples[low]),
+        });
+        doors.forEach((door, i) => {
+          door.style.visibility = lift < 1 ? "visible" : "hidden";
+          door.setAttribute(
+            "transform",
+            `translate(${(i ? -1 : 1) * unlock * 75} ${lift * 800})`,
+          );
+        });
+        handStill.style.cssText = `left:${railX}px;top:${cy}px;width:${size * 1.94}px;height:${size * 1.94}px;opacity:${hand};background-position:${grip > 0.7 ? 100 : grip > 0.25 ? 50 : 0}% 50%;transform:translate(-50%,-45%) rotate(${mobile ? -40 : 0}deg);`;
+      } else handStill.style.opacity = "0";
+      // One straight document-space conduit. Its first pixel is the lower core
+      // socket, and its last pixel is the existing rail: no curve, spline or X lerp.
+      const {
+        x,
+        start: origin,
+        length,
+      } = signalSegment(railX, railY, y, cy, size, h, release);
+      beam.style.left = `${x}px`;
+      beam.style.top = `${origin - rootTop}px`;
+      beam.style.height = `${length}px`;
+      beam.style.opacity = release > 0 ? "1" : "0";
+      beam.style.setProperty(
+        "--signal-flow",
+        `${reduce ? 0 : seconds * 110}px`,
       );
-      const amount = reduce ? 1 : release > 0.001 ? (low + fraction) / 128 : 0;
-      path.style.strokeDashoffset = String(pathLength * (1 - amount));
-      path.style.opacity = String(reduce ? 1 : smooth(0.75, 0.89, scene));
-      const charge = reduce ? 1 : smooth(railY - h * 0.72, railY - h * 0.58, y);
+      // Suppress the connector across the existing logo strip and heading, without
+      // moving it sideways or changing those sections' layout/content.
+      const denseStart = sceneBottom - origin;
+      const denseEnd = railY - origin - 55;
+      beam.style.maskImage = `linear-gradient(to bottom,#000 0px,#000 ${Math.max(0, denseStart - 45)}px,#0002 ${Math.max(0, denseStart)}px,#0002 ${Math.max(0, denseEnd - 40)}px,#000 ${Math.max(0, denseEnd)}px)`;
+      const charge = reduce ? 1 : smooth(railY - h * 0.89, railY - h * 0.8, y);
       timeline.style.setProperty("--signal-charge", String(charge));
+      timeline.style.setProperty(
+        "--signal-impact",
+        String(Math.sin(charge * Math.PI)),
+      );
       const lit =
         clamp((y - (railY - h * 0.8)) / (railHeight + h * 0.5)) * railHeight;
-      nodes.forEach(
-        (node, i) =>
-          (node.dataset.charged =
-            charge > 0.5 && lit >= nodeOffsets[i] ? "true" : "false"),
-      );
+      nodes.forEach((node, i) => {
+        node.dataset.charged =
+          charge > 0.5 && lit >= offsets[i] ? "true" : "false";
+      });
     };
     gsap.ticker.add(tick);
     tick(0);
     return () => {
       disposed = true;
       observer.disconnect();
-      preload.disconnect();
       cancelAnimationFrame(refreshFrame);
       refresh.kill();
       unsubscribe?.();
@@ -312,6 +298,7 @@ export function SignalStory({ children }: { children: ReactNode }) {
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);
       timeline.style.removeProperty("--signal-charge");
+      timeline.style.removeProperty("--signal-impact");
       nodes.forEach((n) => delete n.dataset.charged);
     };
   }, [reducedMotion, subscribeScroll]);
@@ -328,62 +315,37 @@ export function SignalStory({ children }: { children: ReactNode }) {
       }
     >
       {children}
-      <svg className="signal-conductor" aria-hidden="true">
-        <path
-          ref={pathRef}
-          fill="none"
-          stroke="var(--signal-red)"
-          strokeWidth="2"
-        />
-      </svg>
+      <div ref={beamRef} className="signal-conductor" aria-hidden="true">
+        <i />
+        <b />
+        <span />
+      </div>
       <canvas ref={canvasRef} className="signal-stage" aria-hidden="true" />
+      <div ref={handRef} className="signal-hand-still" aria-hidden="true" />
       <svg
         ref={fallbackRef}
         className="signal-stage signal-fallback"
         aria-hidden="true"
       >
         <defs>
-          <linearGradient id="signal-shell" x2="1" y2="1">
-            <stop stopColor="#666976" />
-            <stop offset=".3" stopColor="#20222b" />
-            <stop offset=".75" stopColor="#111218" />
-            <stop offset="1" stopColor="#713240" />
+          <linearGradient id="cipher-shell">
+            <stop stopColor="#51525a" />
+            <stop offset=".18" stopColor="#202127" />
+            <stop offset="1" stopColor="#101116" />
           </linearGradient>
         </defs>
-        <g data-fallback-rig>
-          <g data-fallback-core stroke="#737480" strokeWidth="1">
-            <path
-              d="M-8-98-52-66-51 7-30 31-18-9ZM-50 12-30 36-42 82-21 99-6 22-19 7ZM24-99 8-27 21-7 51-31 46-81ZM21-3 51-28 50 66 11 99 16 32Z"
-              fill="url(#signal-shell)"
-            />
-            <path
-              d="m-22 94 10-4 34-184-10 5Z"
-              fill={SIGNAL.red}
-              stroke={SIGNAL.hot}
-            />
+        <g data-core-rig>
+          <path d="M-2-136 2-135 7 140 0 143Z" fill={SIGNAL.red} />
+          <g fill="url(#cipher-shell)" stroke="#44454b" strokeWidth=".6">
+            <path data-core-plate d="M-43-147-16-161-8-29-19-9-43-23Z" />
+            <path data-core-plate d="M-43-19-18-5-9 140-34 155-43 136Z" />
+            <path data-core-plate d="M2-138 34-149 41-36 11-15Z" />
+            <path data-core-plate d="M11-10 43-30 43 131 18 152 10 28Z" />
           </g>
-          <g
-            data-fallback-hand
-            fill="url(#signal-shell)"
-            stroke="#7b727f"
-            strokeWidth="1.2"
-          >
-            <path
-              data-fallback-open
-              d="M-39 203-51 94-78 32Q-85 6-70 1Q-57-3-49 20L-35 46-42-77Q-44-95-29-95Q-17-95-17-79L-12-9-10-97Q-8-114 5-110Q17-110 17-94L17-6 28-83Q31-98 43-94Q54-91 50-74L41 3 53-49Q57-65 69-60Q78-57 75-43L62 51 51 106 46 203Z"
-            />
-            <path
-              data-fallback-closed
-              d="M-39 203-49 105-64 20Q-68-13-48-25L-40-49Q-37-69-19-62L-2-67Q20-77 31-57Q52-62 61-44L66 8 56 72 43 110 44 203ZM-45-20Q-6-36 33-5L25 14Q-9 2-24 15"
-            />
+          <g fill="#17171b" stroke="#2b2b30">
+            <path data-core-door d="M4-180 100-203 136-151 136 500 4 500Z" />
+            <path data-core-door d="M-4-180-100-203-136-151-136 500-4 500Z" />
           </g>
-          <path
-            data-fallback-leak
-            d="M-13 30Q-18 100-3 148T0 350M8 32Q19 102 4 160T0 350"
-            stroke={SIGNAL.red}
-            strokeWidth="3"
-            fill="none"
-          />
         </g>
       </svg>
     </div>
